@@ -16,6 +16,13 @@ namespace Anti_BaseUlt.Internal
                     : new Vector3(14340, 171.9777f, 14390);
             }
 
+            if (Game.MapId == GameMapId.TwistedTreeline)
+            {
+                return Player.Team == GameObjectTeam.Order
+                    ? new Vector3(1058, 150.8638f, 7297)
+                    : new Vector3(14320, 151.9291f, 7235);
+            }
+
             return Vector3.Zero;
         }
 
@@ -43,20 +50,6 @@ namespace Anti_BaseUlt.Internal
             }
 
             return 8000;
-        }
-
-        public static bool IsLineCircleIntersection(this Vector3 circle, float radius, Vector3 v1, Vector3 v2)
-        {
-            var toLineEnd = v2 - v1;
-            var toCircle = circle - v1;
-            var theta = (toCircle.X * toLineEnd.X + toCircle.Y * toLineEnd.Y) /
-                        (toLineEnd.X * toLineEnd.X + toLineEnd.Y * toLineEnd.Y);
-            theta = theta <= 0 ? 0 : 1;
-
-            var closest = v1 + new Vector3(toLineEnd.X * theta, toLineEnd.Y * theta, toLineEnd.Z * theta);
-            var d = circle - closest;
-            var dist = d.X * d.X + d.Y * d.Y;
-            return dist <= radius * radius;
         }
 
         public static bool IsRecalling(this Obj_AI_BaseTeleportEventArgs args)

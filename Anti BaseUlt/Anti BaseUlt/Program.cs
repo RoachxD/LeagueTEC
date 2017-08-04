@@ -2,7 +2,6 @@
 using Aimtec;
 using Aimtec.SDK.Events;
 using Aimtec.SDK.Extensions;
-using Aimtec.SDK.Menu.Components;
 using Anti_BaseUlt.Internal;
 
 namespace Anti_BaseUlt
@@ -18,6 +17,24 @@ namespace Anti_BaseUlt
 
         private static void GameEvents_GameStart()
         {
+            if (Game.MapId != GameMapId.SummonersRift || Game.MapId != GameMapId.TwistedTreeline)
+            {
+                UtilityManager.Print("Map not supported, assembly not loading.");
+                return;
+            }
+
+            if (
+                !ObjectManager.Get<Obj_AI_Hero>()
+                    .Any(
+                        c =>
+                            c.IsEnemy &&
+                            (c.ChampionName.Equals("Ashe") || c.ChampionName.Equals("Draven") ||
+                             c.ChampionName.Equals("Ezreal") || c.ChampionName.Equals("Jinx"))))
+            {
+                UtilityManager.Print("No championss with global ults, assembly not loading.");
+                return;
+            }
+
             UtilityManager.Print("Loaded!");
 
             MissileManager.Initialize();
@@ -29,7 +46,7 @@ namespace Anti_BaseUlt
 
         private static void Obj_AI_Base_OnTeleport(Obj_AI_Base sender, Obj_AI_BaseTeleportEventArgs e)
         {
-            if (!MenuManager.Root["Enable"].As<MenuBool>().Enabled || sender != UtilityManager.Player ||
+            if (!MenuManager.Root["Enable"].Enabled || sender != UtilityManager.Player ||
                 !e.IsRecalling())
             {
                 return;
@@ -42,7 +59,7 @@ namespace Anti_BaseUlt
 
         private static void GameObject_OnCreate(GameObject sender)
         {
-            if (!MenuManager.Root["Enable"].As<MenuBool>().Enabled || !UtilityManager.Player.IsRecalling() ||
+            if (!MenuManager.Root["Enable"].Enabled || !UtilityManager.Player.IsRecalling() ||
                 sender == null || !sender.IsValid || sender.Type != GameObjectType.MissileClient)
             {
                 return;
@@ -63,27 +80,29 @@ namespace Anti_BaseUlt
             }
 
             var fountainPos = UtilityManager.GetFountainPos();
-            if (!fountainPos.IsLineCircleIntersection(500, spell.Position, spell.EndPosition))
+            var endPos = spell.Position.Extend(spell.EndPosition, spell.Position.Distance(fountainPos));
+            if (endPos.Distance(fountainPos) > 500)
             {
-                UtilityManager.Print("BaseUlt not in fountain! (" + spell.SpellCaster.UnitSkinName + " - " +
+                UtilityManager.Print("BaseUlt not in fountain! (" + ((Obj_AI_Hero) spell.SpellCaster).ChampionName +
+                                     " - " +
                                      spell.SpellData.Name + " | Pos: " + spell.EndPosition + ")");
                 return;
             }
 
             var tick = Game.TickCount +
                        spell.Position.Distance(fountainPos) /
-                       MissileManager.Missiles.Single(i => spell.SpellCaster.UnitSkinName.Contains(i.ChampionName))
-                           .Speed * 1000;
+                       MissileManager.Missiles.Single(
+                           i => ((Obj_AI_Hero) spell.SpellCaster).ChampionName.Equals(i.ChampionName)).Speed * 1000;
             if (1000 + _recallingTick < tick || _recallingTick - 1000 > tick)
             {
-                UtilityManager.Print("BaseUlt not correctly timed! (" + spell.SpellCaster.UnitSkinName + " - " +
-                                     spell.SpellData.Name + " | Tick: " + tick + ")");
+                UtilityManager.Print("BaseUlt not correctly timed! (" + ((Obj_AI_Hero) spell.SpellCaster).ChampionName +
+                                     " - " + spell.SpellData.Name + " | Tick: " + tick + ")");
                 return;
             }
 
             UtilityManager.Player.IssueOrder(OrderType.MoveTo, UtilityManager.Player.Position.Extend(Vector3.Down, 1));
-            UtilityManager.Print("BaseUlt prevented! (" + spell.SpellCaster.UnitSkinName + " | " + spell.SpellData.Name +
-                                 ")");
+            UtilityManager.Print("BaseUlt prevented! (" + ((Obj_AI_Hero) spell.SpellCaster).ChampionName + " | " +
+                                 spell.SpellData.Name + ")");
         }
     }
 }
